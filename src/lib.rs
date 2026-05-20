@@ -547,6 +547,3 @@ mod test {
         assert_eq!(get_version_number("1.2.3"), 1002030);
     }
 }
-
-
-

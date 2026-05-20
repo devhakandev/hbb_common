@@ -233,10 +233,7 @@ mod tests {
             ipv4_to_ipv6("1.1.1.1:8080".to_owned(), false),
             "1.1.1.1.nip.io:8080"
         );
-        assert_eq!(
-            ipv4_to_ipv6("127.0.0.1".to_owned(), false),
-            "127.0.0.1"
-        );
+        assert_eq!(ipv4_to_ipv6("127.0.0.1".to_owned(), false), "127.0.0.1");
         if ("127.0.0.1:80")
             .to_socket_addrs()
             .unwrap()
@@ -289,5 +286,3 @@ mod tests {
         assert_eq!(increase_port("z1:2", 1), "z1:3");
     }
 }
-
-
