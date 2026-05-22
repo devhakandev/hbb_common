@@ -98,8 +98,15 @@ const CHARS: &[char] = &[
     'm', 'n', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
 ];
 
-pub const RENDEZVOUS_SERVERS: &[&str] = &["127.0.0.1"];
-pub const RS_PUB_KEY: &str = "aPO4N7LumKAyYAPJ3UAqWPjqJPoRn+DrSxZKaoi2wIQ=";
+pub const SYRD_RENDEZVOUS_SERVER: &str = match option_env!("SYRD_SERVER_HOST") {
+    Some(value) => value,
+    None => "",
+};
+pub const RENDEZVOUS_SERVERS: &[&str] = &[SYRD_RENDEZVOUS_SERVER];
+pub const RS_PUB_KEY: &str = match option_env!("SYRD_SERVER_KEY") {
+    Some(value) => value,
+    None => "",
+};
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
 pub const RELAY_PORT: i32 = 21117;
@@ -2838,5 +2845,3 @@ mod tests {
         }
     }
 }
-
-
