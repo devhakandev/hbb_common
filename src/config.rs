@@ -100,12 +100,12 @@ const CHARS: &[char] = &[
 
 pub const SYRD_RENDEZVOUS_SERVER: &str = match option_env!("SYRD_SERVER_HOST") {
     Some(value) => value,
-    None => "10.16.15.175",
+    None => "",
 };
 pub const RENDEZVOUS_SERVERS: &[&str] = &[SYRD_RENDEZVOUS_SERVER];
 pub const RS_PUB_KEY: &str = match option_env!("SYRD_SERVER_KEY") {
     Some(value) => value,
-    None => "aPO4N7LumKAyYAPJ3UAqWPjqJPoRn+DrSxZKaoi2wIQ=",
+    None => "",
 };
 
 pub const RENDEZVOUS_PORT: i32 = 21116;
