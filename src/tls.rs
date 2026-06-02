@@ -1,7 +1,5 @@
 use std::{collections::HashMap, sync::RwLock};
 
-use crate::config::allow_insecure_tls_fallback;
-
 #[derive(Debug, Clone, Copy)]
 pub enum TlsType {
     Plain,
@@ -82,19 +80,8 @@ pub fn get_cached_tls_type(url: &str) -> Option<TlsType> {
 
 #[inline]
 pub fn get_cached_tls_accept_invalid_cert(url: &str) -> Option<bool> {
-    if !allow_insecure_tls_fallback() {
-        return Some(false);
-    }
-
-    if is_plain(url) {
-        return Some(false);
-    }
-    let domain_port = get_domain_and_port_from_url(url);
-    URL_TLS_DANGER_ACCEPT_INVALID_CERTS
-        .read()
-        .unwrap()
-        .get(domain_port)
-        .cloned()
+    let _ = url;
+    Some(false)
 }
 #[cfg(test)]
 mod tests {

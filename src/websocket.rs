@@ -39,18 +39,16 @@ impl WsFramedStream {
     #[inline]
     fn get_connector(
         tls_type: &TlsType,
-        danger_accept_invalid_certs: bool,
+        _danger_accept_invalid_certs: bool,
     ) -> ResultType<Option<Connector>> {
         match tls_type {
             TlsType::Plain => Ok(Some(Connector::Plain)),
             TlsType::NativeTls => {
-                let connector = TlsConnector::builder()
-                    .danger_accept_invalid_certs(danger_accept_invalid_certs)
-                    .build()?;
+                let connector = TlsConnector::builder().build()?;
                 Ok(Some(Connector::NativeTls(connector)))
             }
             TlsType::Rustls => {
-                let connector = match crate::verifier::client_config(danger_accept_invalid_certs) {
+                let connector = match crate::verifier::client_config(false) {
                     Ok(client_config) => Some(Connector::Rustls(Arc::new(client_config))),
                     Err(e) => {
                         log::warn!(
@@ -93,7 +91,7 @@ impl WsFramedStream {
         tls_type: TlsType,
         is_tls_type_cached: bool,
         danger_accept_invalid_cert: Option<bool>,
-        original_danger_accept_invalid_certs: Option<bool>,
+        _original_danger_accept_invalid_certs: Option<bool>,
     ) -> ResultType<WebSocketStream<MaybeTlsStream<TcpStream>>> {
         let ws_config = None;
         let disable_nagle = false;
@@ -109,55 +107,23 @@ impl WsFramedStream {
         .await?
         {
             Ok((ws_stream, _)) => {
-                upsert_tls_cache(url, tls_type, danger_accept_invalid_cert.unwrap_or(false));
+                upsert_tls_cache(url, tls_type, false);
                 Ok(ws_stream)
             }
             Err(e) => match (tls_type, is_tls_type_cached, danger_accept_invalid_cert) {
-                (TlsType::Rustls, _, None) => {
+                (TlsType::Rustls, false, _) => {
                     log::warn!(
-                            "WebSocket connection with rustls-tls failed, try accept invalid certs: {}, {:?}",
+                            "WebSocket connection with rustls-tls failed, try native-tls with strict certificate validation: {}, {:?}",
                             url,
                             e
                         );
-                    Self::try_connect(
-                        url,
-                        ms_timeout,
-                        tls_type,
-                        is_tls_type_cached,
-                        Some(true),
-                        original_danger_accept_invalid_certs,
-                    )
-                    .await
-                }
-                (TlsType::Rustls, false, Some(_)) => {
-                    log::warn!(
-                        "WebSocket connection with rustls-tls failed, try native-tls: {}, {:?}",
-                        url,
-                        e
-                    );
                     Self::try_connect(
                         url,
                         ms_timeout,
                         TlsType::NativeTls,
-                        is_tls_type_cached,
-                        original_danger_accept_invalid_certs,
-                        original_danger_accept_invalid_certs,
-                    )
-                    .await
-                }
-                (TlsType::NativeTls, _, None) => {
-                    log::warn!(
-                            "WebSocket connection with native-tls failed, try accept invalid certs: {}, {:?}",
-                            url,
-                            e
-                        );
-                    Self::try_connect(
-                        url,
-                        ms_timeout,
-                        tls_type,
-                        is_tls_type_cached,
-                        Some(true),
-                        original_danger_accept_invalid_certs,
+                        true,
+                        Some(false),
+                        Some(false),
                     )
                     .await
                 }
