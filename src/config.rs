@@ -40,6 +40,7 @@ pub const COMPRESS_LEVEL: i32 = 3;
 const SERIAL: i32 = 3;
 const PASSWORD_ENC_VERSION: &str = "00";
 pub const ENCRYPT_MAX_LEN: usize = 128; // used for password, pin, etc, not for all
+pub const BRANDED_DESKTOP_ID_OFFSET: u32 = 1_000_000_000;
 
 #[cfg(target_os = "macos")]
 lazy_static::lazy_static! {
@@ -920,18 +921,33 @@ impl Config {
 
         #[cfg(not(any(target_os = "android", target_os = "ios")))]
         {
-            let mut id = 0u32;
             if let Ok(Some(ma)) = mac_address::get_mac_address() {
-                for x in &ma.bytes()[2..] {
-                    id = (id << 8) | (*x as u32);
-                }
-                id &= 0x1FFFFFFF;
-                log::info!("Generated id {}", id);
+                let id = Self::get_branded_desktop_id(ma.bytes());
+                log::info!("Generated branded id {}", id);
                 Some(id.to_string())
             } else {
                 None
             }
         }
+    }
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    fn get_branded_desktop_id(mac: [u8; 6]) -> u32 {
+        let mut seed = 0u32;
+        for byte in &mac[2..] {
+            seed = (seed << 8) | (*byte as u32);
+        }
+
+        BRANDED_DESKTOP_ID_OFFSET + (seed & 0x1FFFFFFF)
+    }
+
+    pub fn get_branded_id_from_legacy_id(id: &str) -> Option<String> {
+        let legacy_id = id.parse::<u32>().ok()?;
+        if legacy_id > 0x1FFFFFFF {
+            return None;
+        }
+
+        Some((BRANDED_DESKTOP_ID_OFFSET + legacy_id).to_string())
     }
 
     pub fn get_auto_password(length: usize) -> String {
@@ -2979,6 +2995,21 @@ impl Status {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    #[test]
+    fn test_branded_desktop_id_is_stable_and_separate_from_stock_range() {
+        let mac = [0x00, 0x11, 0x01, 0x07, 0xed, 0xd4];
+        let id = Config::get_branded_desktop_id(mac);
+
+        assert_eq!(id, 1_017_296_852);
+        assert!((1_000_000_000..=1_536_870_911).contains(&id));
+        assert_eq!(
+            Config::get_branded_id_from_legacy_id("17296852"),
+            Some("1017296852".to_owned())
+        );
+        assert_eq!(Config::get_branded_id_from_legacy_id(&id.to_string()), None);
+    }
 
     #[test]
     fn test_serialize() {
