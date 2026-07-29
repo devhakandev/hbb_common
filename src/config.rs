@@ -73,7 +73,18 @@ lazy_static::lazy_static! {
     static ref ONLINE: Mutex<HashMap<String, i64>> = Default::default();
     pub static ref PROD_RENDEZVOUS_SERVER: RwLock<String> = RwLock::new("".to_owned());
     pub static ref EXE_RENDEZVOUS_SERVER: RwLock<String> = Default::default();
-    pub static ref APP_NAME: RwLock<String> = RwLock::new("SevketYilmazRD".to_owned());
+    // Distinct config namespace per client profile so Host and Admin do not share
+    // %APPDATA%\<app>\config (they used to collide on "SevketYilmazRD"). The admin
+    // build also gets a matching "sevketyilmazrd-admin://" uri prefix via
+    // get_uri_prefix(). Baked at compile time from the SYRD_CLIENT_PROFILE env
+    // (build.rs reruns on change).
+    pub static ref APP_NAME: RwLock<String> = RwLock::new(
+        match option_env!("SYRD_CLIENT_PROFILE") {
+            Some("admin") => "SevketYilmazRD-Admin",
+            _ => "SevketYilmazRD",
+        }
+        .to_owned()
+    );
     static ref KEY_PAIR: Mutex<Option<KeyPair>> = Default::default();
     static ref USER_DEFAULT_CONFIG: RwLock<(UserDefaultConfig, Instant)> = RwLock::new((UserDefaultConfig::load(), Instant::now()));
     pub static ref NEW_STORED_PEER_CONFIG: Mutex<HashSet<String>> = Default::default();
